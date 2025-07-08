@@ -30,7 +30,9 @@ def fetch_top_stories():
             by=raw.get('by',''),
             domain=urlparse(raw.get('url','')).netloc,
             keywords=[kw for kw in KEYWORDS if kw in raw.get('title','').lower()]
-        ).dict()
+        ).model_dump(mode='json')
+        if story['url'] is not None:
+            story['url'] = str(story['url'])
         results.append(story)
     cache.set(CACHE_KEY, results, TTL)
     return results

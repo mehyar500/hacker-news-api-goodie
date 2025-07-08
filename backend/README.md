@@ -158,11 +158,19 @@ python manage.py fetch_stories
 
 ## 🧪 Testing
 
-Run unit tests with pytest:
+To run the backend tests, use:
 
 ```bash
-pytest
+pytest --maxfail=1 --disable-warnings -q
 ```
+
+To see print/log output from tests (e.g., sample data printed during test runs), use the `-s` flag with pytest:
+
+```bash
+pytest -s --maxfail=1 --disable-warnings -q
+```
+
+This disables output capturing so you can view print statements in your test output.
 
 Tests cover:
 

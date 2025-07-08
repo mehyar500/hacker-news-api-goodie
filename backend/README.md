@@ -122,38 +122,6 @@ REDIS_URL=redis://localhost:6379/1
 
 ---
 
-## 🔧 Django Configuration
-
-1. **Database** in `settings.py`:
-   ```python
-   import dj_database_url
-   DATABASES = {
-       'default': dj_database_url.parse(os.getenv('DATABASE_URL'), conn_max_age=600)
-   }
-   ```
-2. **Caching**:
-   ```python
-   CACHES = {
-       'default': {
-           'BACKEND': 'django_redis.cache.RedisCache',
-           'LOCATION': os.getenv('REDIS_URL'),
-           'OPTIONS': {'CLIENT_CLASS': 'django_redis.client.DefaultClient'}
-       }
-   }
-   ```
-3. **Channels**:
-   ```python
-   INSTALLED_APPS += ['channels']
-   ASGI_APPLICATION = 'hn_dashboard.asgi.application'
-   CHANNEL_LAYERS = {
-       'default': {
-           'BACKEND': 'channels_redis.core.RedisChannelLayer',
-           'CONFIG': {'hosts': [os.getenv('REDIS_URL')]}  
-       }
-   }
-   ```
-
----
 
 ## 📋 Available Endpoints
 

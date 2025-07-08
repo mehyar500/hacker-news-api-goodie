@@ -1,16 +1,20 @@
 # analytics/models.py
-from django.db import models
+from pydantic import BaseModel, HttpUrl, Field
+from datetime import datetime
 
-class Story(models.Model):
-    hn_id       = models.IntegerField(unique=True)
-    title       = models.TextField()
-    url         = models.URLField(blank=True, null=True)
-    time        = models.DateTimeField()
-    score       = models.IntegerField()
-    descendants = models.IntegerField()
-    by          = models.CharField(max_length=100)
-    domain      = models.CharField(max_length=255, blank=True)
-    keywords    = models.JSONField(default=list)  # Stores list of strings
+class StorySchema(BaseModel):
+    # Match the Django ORM field `hn_id`
+    hn_id: int = Field(..., alias='id')
+    title: str
+    url: HttpUrl | None
+    time: datetime
+    score: int
+    descendants: int
+    by: str
+    domain: str
+    keywords: list[str]
 
-    class Meta:
-        ordering = ['-time']
+    class Config:
+        orm_mode = True                           # Enable ORM → Pydantic conversion
+        allow_population_by_field_name = True     # Accept `hn_id` or `id` when populating
+

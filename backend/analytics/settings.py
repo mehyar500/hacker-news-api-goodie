@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 import os
 import dj_database_url
+from celery.schedules import crontab
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -79,32 +80,22 @@ ASGI_APPLICATION = 'hn_dashboard.asgi.application'
 
 #channels configuration for handling WebSockets and other asynchronous tasks
 # https://channels.readthedocs.io/en/stable/topics/channel_layers.html
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels_redis.core.RedisChannelLayer',
-        'CONFIG': {'hosts': [os.getenv('REDIS_URL')]}  
-    }
-}
+CHANNEL_LAYERS = {'default': {'BACKEND': 'channels_redis.core.RedisChannelLayer','CONFIG': {'hosts': [os.getenv('REDIS_URL')]}}}
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    'default': dj_database_url.parse(
-        os.getenv('DATABASE_URL'),
-        conn_max_age=600,
-        ssl_require=False
-    )
-}
+DATABASES = {'default': dj_database_url.parse(os.getenv('DATABASE_URL'), conn_max_age=600)}
 
-CACHES = {
-    'default': {
-        'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': os.getenv('REDIS_URL'),
-        'OPTIONS': {'CLIENT_CLASS': 'django_redis.client.DefaultClient'}
-    }
-}
+CACHES = {'default': {'BACKEND': 'django_redis.cache.RedisCache','LOCATION': os.getenv('REDIS_URL'),'OPTIONS': {'CLIENT_CLASS': 'django_redis.client.DefaultClient'}}}
 
+CELERY_BROKER_URL = os.getenv('REDIS_URL')
+CELERY_BEAT_SCHEDULE = {
+    'fetch-hn-stories-daily': {
+        'task': 'analytics.tasks.fetch_stories_task',
+        'schedule': crontab(hour=0, minute=0), # Runs daily at midnight
+    },
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators

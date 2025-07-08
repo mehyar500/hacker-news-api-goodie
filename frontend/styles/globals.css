@@ -1,18 +1,33 @@
 /* styles/globals.css */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Nunito:wght@400;700;900&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f3f6fd;
+  --foreground: #18181b;
+  --accent: #7c3aed;
+  --accent2: #f472b6;
+  --card: rgba(255,255,255,0.85);
+  --card-dark: rgba(24,24,27,0.85);
+  --glass: rgba(255,255,255,0.6);
+  --glass-dark: rgba(24,24,27,0.6);
+  --chip: #e0e7ff;
+  --chip-dark: #312e81;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
+    --background: #18181b;
     --foreground: #ededed;
+    --card: rgba(24,24,27,0.85);
+    --card-dark: rgba(35,39,47,0.85);
+    --glass: rgba(24,24,27,0.6);
+    --glass-dark: rgba(35,39,47,0.6);
+    --chip: #312e81;
+    --chip-dark: #e0e7ff;
   }
 }
 
@@ -21,5 +36,17 @@ body {
   padding: 0;
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Nunito', 'Inter', Arial, Helvetica, sans-serif;
+  min-height: 100vh;
+  transition: background 0.3s, color 0.3s;
+  letter-spacing: 0.01em;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  background: var(--background);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--accent);
+  border-radius: 4px;
 }

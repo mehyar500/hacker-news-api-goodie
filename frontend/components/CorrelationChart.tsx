@@ -1,5 +1,5 @@
 import React from 'react';
-import { ScatterChart, Scatter, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { ScatterChart, Scatter, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
 interface CorrelationChartProps {
   data: [number, number][];
@@ -9,13 +9,14 @@ const CorrelationChart: React.FC<CorrelationChartProps> = ({ data }) => {
   const chartData = data.map(([score, comments]) => ({ score, comments }));
 
   return (
-    <div className="w-full h-64">
+    <div className="w-full h-56 md:h-64">
       <ResponsiveContainer>
         <ScatterChart>
-          <XAxis type="number" dataKey="score" name="Score" />
-          <YAxis type="number" dataKey="comments" name="Comments" />
-          <Tooltip />
-          <Scatter data={chartData} className="fill-green-500" />
+          <CartesianGrid strokeDasharray="3 3" stroke="#e0e7ef" />
+          <XAxis type="number" dataKey="score" name="Score" tick={{ fontSize: 12 }} />
+          <YAxis type="number" dataKey="comments" name="Comments" tick={{ fontSize: 12 }} />
+          <Tooltip wrapperClassName="!rounded-lg !shadow-lg !bg-white !text-black" />
+          <Scatter data={chartData} fill="#34d399" />
         </ScatterChart>
       </ResponsiveContainer>
     </div>

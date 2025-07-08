@@ -42,6 +42,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 ]
 
+INSTALLED_APPS += ['channels']
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -69,16 +71,40 @@ TEMPLATES = [
     },
 ]
 
+# wsgi configuration for handling HTTP requests
 WSGI_APPLICATION = 'hn_dashboard.wsgi.application'
+# ASGI configuration for handling WebSockets and other asynchronous task
+ASGI_APPLICATION = 'hn_dashboard.asgi.application'
 
+#channels configuration for handling WebSockets and other asynchronous tasks
+# https://channels.readthedocs.io/en/stable/topics/channel_layers.html
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {'hosts': [os.getenv('REDIS_URL')]}  
+    }
+}
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('POSTGRES_DB', 'hn_db'),
+        'USER': os.getenv('POSTGRES_USER', 'hn_user'),
+        'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'hn_pass'),
+        'HOST': os.getenv('POSTGRES_HOST', 'localhost'),
+        'PORT': os.getenv('POSTGRES_PORT', '5432'),
+        'CONN_MAX_AGE': 600,  # reuse DB connections
+    }
+}
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': os.getenv('REDIS_URL'),
+        'OPTIONS': {'CLIENT_CLASS': 'django_redis.client.DefaultClient'}
     }
 }
 

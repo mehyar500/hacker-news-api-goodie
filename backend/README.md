@@ -122,6 +122,16 @@ REDIS_URL=redis://localhost:6379/1
 
 ---
 
+## 🗄️ Database Migrations
+
+To create and apply database migrations for the analytics app, run:
+
+```bash
+python manage.py makemigrations analytics
+python manage.py migrate
+```
+
+---
 
 ## 📋 Available Endpoints
 
@@ -133,6 +143,16 @@ REDIS_URL=redis://localhost:6379/1
 | `/api/correlation/` | List of (score, comments) pairs for correlation |
 | `/api/schema/`      | OpenAPI schema (JSON)                           |
 | `/api/docs/`        | Interactive Swagger UI                          |
+
+---
+
+## ⏬ Fetching Latest Hacker News Stories
+
+To fetch and store the top 50 Hacker News stories in your database, run the custom management command:
+
+```bash
+python manage.py fetch_stories
+```
 
 ---
 

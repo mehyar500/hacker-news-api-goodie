@@ -6,6 +6,7 @@ from django.core.cache import cache
 from urllib.parse import urlparse
 from datetime import datetime
 from .models import Story
+from analytics.schemas import StorySchema
 
 CACHE_KEY, TTL = 'top_50', 300
 KEYWORDS = ['chatgpt','claude','anthropic','gpt','llm']
@@ -19,7 +20,7 @@ def fetch_top_stories():
     results = []
     for sid in ids:
         raw = requests.get(HN_ITEM.format(id=sid)).json() or {}
-        story = Story(   # type validation
+        story = StorySchema(   # type validation
             id=sid,
             title=raw.get('title',''),
             url=raw.get('url'),

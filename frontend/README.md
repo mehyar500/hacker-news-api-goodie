@@ -31,7 +31,7 @@ hacker-news-api-goodie/
    npm install
    ```
 2. **Configure environment variables**
-   - Copy `.env.local` if needed and set `NEXT_PUBLIC_API_BASE` (default: `http://localhost:8000/api`)
+   - Copy `.env.local` if needed and set `NEXT_PUBLIC_API_BASE` (default: `http://localhost:8000/v0`)
 
 3. **Run the development server**
    ```bash
@@ -51,7 +51,7 @@ hacker-news-api-goodie/
 
 - `.env.local` (example):
   ```ini
-  NEXT_PUBLIC_API_BASE=http://localhost:8000/api
+  NEXT_PUBLIC_API_BASE=http://localhost:8000/v0
   ```
 - This should match your backend API base URL.
 

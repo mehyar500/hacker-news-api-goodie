@@ -1,67 +1,90 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import api from '../utils/api';
-import { Insights, Story } from '../@types';
+import { Insights, Story, ApiStory } from '../@types';
 import Chart from './Chart';
 
 // ===== TRENDING TAGS COMPONENT =====
 
 const TrendingTags: React.FC<{ tags: [string, number][] }> = ({ tags }) => (
   <div className="flex flex-wrap gap-3 justify-center">
-    {tags.map(([tag, count], i) => (
-      <motion.span
+    {tags.map(([tag, count]) => (
+      <span
         key={tag}
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: i * 0.1 }}
-        className="px-5 py-2 bg-gradient-to-r from-pink-400 to-purple-600 text-white rounded-full font-semibold shadow-md hover:shadow-lg transition-shadow"
+        className="px-5 py-2 bg-gradient-to-r from-pink-400 to-purple-600 text-white rounded-full font-semibold shadow-md"
       >
         #{tag} <span className="ml-2 bg-white/20 px-2 rounded-full text-sm">{count}</span>
-      </motion.span>
+      </span>
     ))}
   </div>
 );
 
-const StoryCard: React.FC<{ story: Story }> = ({ story }) => (
-  <motion.tr 
-    whileHover={{ scale: 1.01 }}
-    className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition"
-  >
-    <td className="p-4 max-w-xs truncate">
-      <a 
-        href={story.url || `https://news.ycombinator.com/item?id=${story.id}`} 
-        target="_blank" 
-        rel="noopener noreferrer"
-        className="text-blue-600 dark:text-blue-400 hover:underline"
-      >
-        {story.title}
-      </a>
-      {story.keywords.length > 0 && (
-        <div className="flex flex-wrap gap-1 mt-1">
-          {story.keywords.slice(0, 3).map(keyword => (
-            <span key={keyword} className="text-xs bg-gray-100 dark:bg-gray-700 rounded-full px-2 py-0.5">
-              {keyword}
-            </span>
-          ))}
-        </div>
-      )}
-    </td>
-    <td className="p-4 text-sm text-gray-600 dark:text-gray-300">{story.by}</td>
-    <td className="p-4 text-sm font-medium">{story.score}</td>
-    <td className="p-4 text-sm">{story.descendants}</td>
-  </motion.tr>
-);
+// Props for StoryCard component
+interface StoryCardProps {
+  story: Story;
+  isSaved: boolean;
+  onToggleSave: (story: Story) => void;
+}
+
+const StoryCard: React.FC<StoryCardProps> = ({ story, isSaved, onToggleSave }) => {
+  const handleSaveClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onToggleSave(story);
+  };
+
+  // Debug log
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Rendering StoryCard:', story.key, 'title:', story.title.substring(0, 30) + '...', 'isSaved:', isSaved);
+  }
+
+  return (
+    <tr className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+      <td className="p-4 max-w-xs truncate">
+        <a 
+          href={story.url || (story.hn_id ? `https://news.ycombinator.com/item?id=${story.hn_id}` : '#')} 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="text-blue-600 dark:text-blue-400 hover:underline"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {story.title}
+        </a>
+        {story.keywords.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-1">
+            {story.keywords.slice(0, 3).map(keyword => (
+              <span key={keyword} className="text-xs bg-gray-100 dark:bg-gray-700 rounded-full px-2 py-0.5">
+                {keyword}
+              </span>
+            ))}
+          </div>
+        )}
+      </td>
+      <td className="p-4 text-sm text-gray-600 dark:text-gray-300">{story.by}</td>
+      <td className="p-4 text-sm font-medium">{story.score}</td>
+      <td className="p-4 text-sm">{story.descendants}</td>
+      <td className="p-4">
+        <button 
+          onClick={handleSaveClick}
+          className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+            isSaved 
+              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 hover:bg-green-200 dark:hover:bg-green-800' 
+              : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 hover:bg-blue-200 dark:hover:bg-blue-800'
+          }`}
+          aria-label={isSaved ? 'Remove from saved stories' : 'Save story'}
+        >
+          {isSaved ? '✓ Saved' : 'Save'}
+        </button>
+      </td>
+    </tr>
+  );
+};
 
 // ===== CARD COMPONENT =====
 
 const Card: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
-  <motion.div
-    whileHover={{ scale: 1.03 }}
-    transition={{ type: 'spring', stiffness: 300 }}
-    className={`bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 ${className}`}
-  >
+  <div className={`bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 ${className}`}>
     {children}
-  </motion.div>
+  </div>
 );
 
 // ===== MAIN DASHBOARD COMPONENT =====
@@ -69,9 +92,174 @@ const Card: React.FC<{ children: React.ReactNode; className?: string }> = ({ chi
 const Dashboard: React.FC = () => {
   const [insights, setInsights] = useState<Insights | null>(null);
   const [stories, setStories] = useState<Story[]>([]);
+  const [savedStories, setSavedStories] = useState<Story[]>(() => {
+    try {
+      const saved = localStorage.getItem('savedStories');
+      const parsed = saved ? JSON.parse(saved) : [];
+      console.log('Loaded saved stories from localStorage:', parsed);
+      
+      // Ensure each saved story has the correct shape
+      return parsed.map((story: Partial<Story> & { id?: number }) => ({
+        hn_id: story.hn_id || story.id, // Handle both formats for backward compatibility
+        title: story.title,
+        url: story.url,
+        by: story.by,
+        score: story.score,
+        descendants: story.descendants,
+        keywords: story.keywords || [],
+        time: story.time || new Date().toISOString(),
+        domain: story.domain || (story.url ? new URL(story.url).hostname : '')
+      }));
+    } catch (error) {
+      console.error('Failed to load saved stories:', error);
+      return [];
+    }
+  });
   const [filter, setFilter] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // For testing: Clear saved stories on component mount
+  useEffect(() => {
+    // Uncomment the next line to clear saved stories for testing
+    // localStorage.removeItem('savedStories');
+  }, []);
+
+  // Load saved stories from localStorage on component mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('savedStories');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          // Ensure all saved stories have the required fields
+          const validStories = parsed.filter((story): story is Story => {
+            return typeof story === 'object' && 
+                   story !== null && 
+                   'key' in story && 
+                   'title' in story &&
+                   'url' in story;
+          });
+          
+          if (process.env.NODE_ENV === 'development') {
+            console.log('Loaded saved stories:', validStories);
+          }
+          
+          setSavedStories(validStories);
+        } else {
+          if (process.env.NODE_ENV === 'development') {
+            console.log('No valid saved stories found in localStorage');
+          }
+          setSavedStories([]);
+        }
+      } else if (process.env.NODE_ENV === 'development') {
+        console.log('No saved stories found in localStorage');
+      }
+    } catch (error) {
+      console.error('Failed to load saved stories:', error);
+      setSavedStories([]);
+    }
+  }, []);
+
+  // Save to localStorage whenever savedStories changes
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Saving stories to localStorage:', savedStories);
+    }
+    
+    try {
+      // Only save the minimal required fields to localStorage
+      const storiesToSave = savedStories.map(story => ({
+        key: story.key,
+        title: story.title,
+        url: story.url,
+        by: story.by,
+        score: story.score,
+        descendants: story.descendants,
+        keywords: story.keywords,
+        time: story.time,
+        domain: story.domain,
+        hn_id: story.hn_id,
+        id: story.id
+      }));
+      
+      localStorage.setItem('savedStories', JSON.stringify(storiesToSave));
+    } catch (error) {
+      console.error('Failed to save stories to localStorage:', error);
+    }
+  }, [savedStories]);
+
+  const isStorySaved = useCallback((storyKey?: string | null) => {
+    // If no key is provided, the story can't be saved
+    if (!storyKey) {
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('isStorySaved called with undefined or null storyKey');
+      }
+      return false;
+    }
+    
+    // Check if any saved story has a matching key
+    const isSaved = savedStories.some(s => s.key === storyKey);
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`Story ${storyKey} is ${isSaved ? '' : 'not '}saved`);
+    }
+    
+    return isSaved;
+  }, [savedStories]);
+
+  const handleToggleSave = useCallback((story: Story) => {
+    // Use the story's key as the unique identifier
+    const storyKey = story.key;
+    
+    if (!storyKey) {
+      console.error('Cannot save story: Missing key', story);
+      return;
+    }
+    
+    setSavedStories(prev => {
+      // Check if the story is already saved
+      const existingIndex = prev.findIndex(s => s.key === storyKey);
+      
+      if (existingIndex >= 0) {
+        // Remove the story if it's already saved
+        const updated = [...prev];
+        updated.splice(existingIndex, 1);
+        
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Removed story. Updated saved stories:', updated);
+        }
+        
+        return updated;
+      } else {
+        // Create a new story object with all required fields
+        const now = new Date().toISOString();
+        const domain = story.domain || (story.url ? new URL(story.url).hostname : '');
+        
+        const storyToSave: Story = {
+          ...story,
+          // Ensure we have all required fields
+          key: storyKey,
+          title: story.title || 'Untitled',
+          url: story.url || '',
+          by: story.by || 'unknown',
+          score: story.score || 0,
+          descendants: story.descendants || 0,
+          keywords: story.keywords || [],
+          time: story.time || now,
+          domain: domain
+        };
+        
+        const updated = [...prev, storyToSave];
+        
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Added story. Updated saved stories:', updated);
+        }
+        
+        return updated;
+      }
+    });
+  }, []);
 
   // Format data for charts
   const { keywordData, domainData, correlationData } = useMemo(() => {
@@ -125,23 +313,30 @@ const Dashboard: React.FC = () => {
         });
         
         // Transform stories to match our frontend type
-        const formattedStories = (storiesRes.data || []).map((story: {
-          id: number;
-          title: string;
-          url?: string;
-          by: string;
-          score: number;
-          descendants: number;
-          keywords?: string[];
-        }) => ({
-          id: story.id,
-          title: story.title,
-          url: story.url,
-          by: story.by,
-          score: story.score,
-          descendants: story.descendants,
-          keywords: story.keywords || []
-        }));
+        const formattedStories = (storiesRes.data as ApiStory[] || []).map((story): Story => {
+          // Use the ID from the backend if available, otherwise use undefined
+          const storyId = story.id || undefined;
+          const title = story.title || 'Untitled';
+          const url = story.url || (storyId ? `https://news.ycombinator.com/item?id=${storyId}` : '');
+          const domain = story.domain || (url ? new URL(url).hostname : '');
+          
+          // Create a unique key using ID + title
+          const key = storyId ? `${storyId}-${title}` : title;
+          
+          return {
+            hn_id: storyId,
+            id: storyId, // For backward compatibility
+            key,
+            title,
+            url,
+            by: story.by || 'unknown',
+            score: story.score || 0,
+            descendants: story.descendants || 0,
+            keywords: story.keywords || [],
+            time: story.time || new Date().toISOString(),
+            domain
+          };
+        });
         
         setStories(formattedStories);
       } catch (err) {
@@ -162,10 +357,9 @@ const Dashboard: React.FC = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="flex flex-col items-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500 mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-300">Loading dashboard data...</p>
-        </div>
+          <div className="flex items-center">
+            <span className="text-sm text-gray-500">Loading...</span>
+          </div>
       </div>
     );
   }
@@ -210,7 +404,7 @@ const Dashboard: React.FC = () => {
   if (!insights) return null;
 
   return (
-    <main className="container mx-auto px-4 py-8">
+    <div className="space-y-8">
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
         <Chart
@@ -282,18 +476,30 @@ const Dashboard: React.FC = () => {
                   <th className="p-4 text-left">Author</th>
                   <th className="p-4 text-left">Score</th>
                   <th className="p-4 text-left">Comments</th>
+                  <th className="p-4 text-left">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                {filteredStories.map(story => (
-                  <StoryCard key={story.id} story={story} />
-                ))}
+                {filteredStories.map((story) => {
+                  const isSaved = isStorySaved(story.key);
+                  if (process.env.NODE_ENV === 'development') {
+                    console.log(`Rendering story ${story.key}:`, { story, isSaved });
+                  }
+                  return (
+                    <StoryCard 
+                      key={story.key} 
+                      story={story} 
+                      isSaved={isSaved}
+                      onToggleSave={handleToggleSave}
+                    />
+                  );
+                })}
               </tbody>
             </table>
           </div>
         </Card>
       </section>
-    </main>
+    </div>
   );
 };
 

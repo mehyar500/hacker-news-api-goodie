@@ -1,106 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import {
-  ScatterChart, Scatter, XAxis, YAxis, Tooltip as RechartsTooltip,
-  ResponsiveContainer, CartesianGrid, BarChart, Bar, PieChart, Pie, Cell, Legend
-} from 'recharts';
 import api from '../utils/api';
 import { Insights, Story } from '../@types';
+import Chart from './Chart';
 
-// ===== CHART COMPONENTS =====
-
-const KeywordChart: React.FC<{ data: Record<string, number> }> = ({ data }) => {
-  const chartData = Object.entries(data).map(([keyword, count]) => ({ keyword, count }));
-
-  if (!chartData.length) {
-    return <div className="text-center text-neutral-400 py-8">No keyword data available.</div>;
-  }
-
-  return (
-    <div className="w-full h-56 md:h-64">
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={chartData} className="mx-auto">
-          <defs>
-            <linearGradient id="kw-gradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#6366f1" />
-              <stop offset="100%" stopColor="#f472b6" />
-            </linearGradient>
-          </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="#e0e7ef" />
-          <XAxis dataKey="keyword" tick={{ fontSize: 12 }} angle={-20} textAnchor="end" height={50} />
-          <YAxis tick={{ fontSize: 12 }} domain={[0, 2]} allowDecimals={false} />
-          <RechartsTooltip wrapperClassName="!rounded-lg !shadow-lg !bg-white !text-black" />
-          <Bar dataKey="count" radius={[6, 6, 0, 0]} fill="url(#kw-gradient)" minPointSize={10} />
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
-  );
-};
-
-const DomainChart: React.FC<{ data: [string, number][] }> = ({ data }) => {
-  const COLORS = ['#6366f1', '#f472b6', '#fbbf24', '#34d399', '#60a5fa', '#f87171', '#a78bfa', '#facc15', '#38bdf8'];
-  const chartData = data.map(([name, value]) => ({ name, value }));
-
-  if (!chartData.length) {
-    return <div className="text-center text-neutral-400 py-8">No domain data available.</div>;
-  }
-
-  return (
-    <div className="w-full h-56 md:h-64">
-      <ResponsiveContainer>
-        <PieChart>
-          <Pie
-            data={chartData}
-            dataKey="value"
-            nameKey="name"
-            outerRadius={70}
-            innerRadius={30}
-            label={({ name }) => name.length > 12 ? name.slice(0, 12) + '…' : name}
-            isAnimationActive
-          >
-            {chartData.map((entry, index) => (
-              <Cell key={entry.name} fill={COLORS[index % COLORS.length]} />
-            ))}
-          </Pie>
-          <RechartsTooltip wrapperClassName="!rounded-lg !shadow-lg !bg-white !text-black" />
-          <Legend verticalAlign="bottom" height={36} iconType="circle"/>
-        </PieChart>
-      </ResponsiveContainer>
-    </div>
-  );
-};
-
-const CorrelationChart: React.FC<{ data: [number, number][] }> = ({ data }) => {
-  const chartData = data.map(([score, comments]) => ({ score, comments }));
-
-  if (!chartData.length) {
-    return <div className="text-center text-neutral-400 py-8">No correlation data available.</div>;
-  }
-
-  return (
-    <div className="w-full h-56 md:h-64">
-      <ResponsiveContainer>
-        <ScatterChart>
-          <CartesianGrid strokeDasharray="3 3" stroke="#e0e7ef" />
-          <XAxis type="number" dataKey="score" name="Score" tick={{ fontSize: 12 }} />
-          <YAxis type="number" dataKey="comments" name="Comments" tick={{ fontSize: 12 }} />
-          <RechartsTooltip wrapperClassName="!rounded-lg !shadow-lg !bg-white !text-black" />
-          <Scatter data={chartData} fill="#34d399" />
-        </ScatterChart>
-      </ResponsiveContainer>
-    </div>
-  );
-};
+// ===== TRENDING TAGS COMPONENT =====
 
 const TrendingTags: React.FC<{ tags: [string, number][] }> = ({ tags }) => (
   <div className="flex flex-wrap gap-3 justify-center">
     {tags.map(([tag, count], i) => (
       <motion.span
         key={tag}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
         transition={{ delay: i * 0.1 }}
-        className="px-5 py-2 bg-gradient-to-r from-pink-400 to-purple-600 text-white rounded-full font-semibold shadow-md"
+        className="px-5 py-2 bg-gradient-to-r from-pink-400 to-purple-600 text-white rounded-full font-semibold shadow-md hover:shadow-lg transition-shadow"
       >
         #{tag} <span className="ml-2 bg-white/20 px-2 rounded-full text-sm">{count}</span>
       </motion.span>
@@ -158,6 +72,35 @@ const Dashboard: React.FC = () => {
   const [filter, setFilter] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Format data for charts
+  const { keywordData, domainData, correlationData } = useMemo(() => {
+    if (!insights) return { keywordData: [], domainData: [], correlationData: [] };
+
+    const keywordData = Object.entries(insights.keyword_freq || {})
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 10);
+
+    const domainData = (insights.top_domains || [])
+      .map(([name, value]) => ({
+        name: name.replace('www.', '').replace('.com', '').replace('.org', '').replace('.net', ''),
+        value,
+      }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 8);
+
+    const correlationData = (insights.pairs || [])
+      .filter(([score, comments]) => score <= 1000 && comments <= 500)
+      .map(([score, comments]) => ({
+        score,
+        comments,
+        value: Math.sqrt(score * comments), // For bubble size in scatter plot
+      }));
+
+    return { keywordData, domainData, correlationData };
+  }, [insights]);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -270,26 +213,37 @@ const Dashboard: React.FC = () => {
     <main className="container mx-auto px-4 py-8">
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-        <Card>
-          <h3 className="text-lg font-semibold mb-3 flex items-center">
-            <span className="mr-2">🔍</span> Top Keywords
-          </h3>
-          <KeywordChart data={insights.keyword_freq} />
-        </Card>
+        <Chart
+          type="bar"
+          data={keywordData}
+          xKey="name"
+          yKey="value"
+          dataKey="value"
+          title="Top Keywords"
+          description="Most frequently mentioned keywords in story titles"
+          className="h-80"
+        />
 
-        <Card>
-          <h3 className="text-lg font-semibold mb-3 flex items-center">
-            <span className="mr-2">🌐</span> Top Domains
-          </h3>
-          <DomainChart data={insights.top_domains} />
-        </Card>
+        <Chart
+          type="pie"
+          data={domainData}
+          dataKey="value"
+          nameKey="name"
+          title="Top Domains"
+          description="Most common domains of shared stories"
+          className="h-80"
+        />
 
-        <Card>
-          <h3 className="text-lg font-semibold mb-3 flex items-center">
-            <span className="mr-2">📊</span> Score vs Comments
-          </h3>
-          <CorrelationChart data={insights.pairs} />
-        </Card>
+        <Chart
+          type="scatter"
+          data={correlationData}
+          xKey="score"
+          yKey="comments"
+          dataKey="value"
+          title="Score vs Comments"
+          description="Relationship between story scores and comment counts"
+          className="h-80"
+        />
       </div>
 
       {/* Trending Section */}

@@ -8,6 +8,10 @@ interface CorrelationChartProps {
 const CorrelationChart: React.FC<CorrelationChartProps> = ({ data }) => {
   const chartData = data.map(([score, comments]) => ({ score, comments }));
 
+  if (!chartData.length) {
+    return <div className="text-center text-neutral-400 py-8">No correlation data available.</div>;
+  }
+
   return (
     <div className="w-full h-56 md:h-64">
       <ResponsiveContainer>

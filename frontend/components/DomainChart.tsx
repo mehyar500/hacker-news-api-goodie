@@ -10,6 +10,10 @@ const COLORS = ['#6366f1', '#f472b6', '#fbbf24', '#34d399', '#60a5fa', '#f87171'
 const DomainChart: React.FC<DomainChartProps> = ({ data }) => {
   const chartData = data.map(([name, value]) => ({ name, value }));
 
+  if (!chartData.length) {
+    return <div className="text-center text-neutral-400 py-8">No domain data available.</div>;
+  }
+
   return (
     <div className="w-full h-56 md:h-64">
       <ResponsiveContainer>
@@ -23,8 +27,8 @@ const DomainChart: React.FC<DomainChartProps> = ({ data }) => {
             label={({ name }) => name.length > 12 ? name.slice(0, 12) + '…' : name}
             isAnimationActive
           >
-            {chartData.map((_, index) => (
-              <Cell key={index} fill={COLORS[index % COLORS.length]} />
+            {chartData.map((entry, index) => (
+              <Cell key={entry.name} fill={COLORS[index % COLORS.length]} />
             ))}
           </Pie>
           <Tooltip wrapperClassName="!rounded-lg !shadow-lg !bg-white !text-black" />

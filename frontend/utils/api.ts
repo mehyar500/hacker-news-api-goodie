@@ -5,4 +5,15 @@ const api = axios.create({
   timeout: 5000,
 });
 
+// Add retry logic for timeouts (up to 3 times)
+api.interceptors.response.use(undefined, async error => {
+  const config = error.config;
+  if (!config || !config.retry) config.retry = 0;
+  if (error.code === 'ECONNABORTED' && config.retry < 3) {
+    config.retry += 1;
+    return api(config);
+  }
+  return Promise.reject(error);
+});
+
 export default api;

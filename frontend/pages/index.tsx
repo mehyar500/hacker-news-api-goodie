@@ -31,7 +31,6 @@ interface HomeProps {
 const emojiAvatars = ['🦄','🦊','🐸','🐼','🐧','🐨','🐯','🦁','🐵','🐻','🐶','🐱','🦉','🦋','🦕','🦖','🦩','🦜','🦚','🦔'];
 
 const getAvatar = (author: string) => {
-  // Simple hash for consistent emoji per author
   let hash = 0;
   for (let i = 0; i < author.length; i++) hash = author.charCodeAt(i) + ((hash << 5) - hash);
   return emojiAvatars[Math.abs(hash) % emojiAvatars.length];
@@ -100,8 +99,8 @@ const Home: React.FC<HomeProps> = ({ stories, insights, trending, pairs }) => {
       <div className="mb-8">
         <h2 className="text-xl font-semibold mb-3 flex items-center gap-2">🔥 Trending Topics</h2>
         <div className="flex flex-wrap gap-2">
-          {trending.map(([topic, count]) => (
-            <span key={topic} className="inline-flex items-center px-4 py-1 rounded-full bg-gradient-to-r from-pink-400 to-purple-500 text-white text-base font-bold shadow hover:scale-105 transition-transform">
+          {trending.map(([topic, count], idx) => (
+            <span key={topic + '-' + count + '-' + idx} className="inline-flex items-center px-4 py-1 rounded-full bg-gradient-to-r from-pink-400 to-purple-500 text-white text-base font-bold shadow hover:scale-105 transition-transform">
               <span className="mr-2">#{topic}</span>
               <span className="bg-white/20 rounded-full px-2 py-0.5 text-xs font-extrabold">{count}</span>
             </span>
@@ -145,8 +144,9 @@ const Home: React.FC<HomeProps> = ({ stories, insights, trending, pairs }) => {
                   <td colSpan={5} className="p-6 text-center text-neutral-400">No stories found.</td>
                 </tr>
               )}
-              {filteredStories.map(s => (
-                <tr key={s.id} className="hover:bg-pink-50 dark:hover:bg-pink-900/40 transition">
+              {filteredStories.map((s, idx) => (
+                <tr key={s.id ?? `${s.title}-${s.by}-${idx}`}
+                  className="hover:bg-pink-50 dark:hover:bg-pink-900/40 transition">
                   <td className="p-4 text-center">
                     <button
                       onClick={() => toggleSave(s.id)}
@@ -166,8 +166,8 @@ const Home: React.FC<HomeProps> = ({ stories, insights, trending, pairs }) => {
                       {s.title}
                     </a>
                     <div className="flex flex-wrap gap-1 mt-1">
-                      {s.keywords.map(kw => (
-                        <span key={kw} className="inline-block bg-[var(--chip)] dark:bg-[var(--chip-dark)] text-purple-700 dark:text-pink-200 rounded-full px-3 py-0.5 text-xs font-extrabold">
+                      {s.keywords.map((kw, kidx) => (
+                        <span key={`${s.id ?? idx}-kw-${kidx}`} className="inline-block bg-[var(--chip)] dark:bg-[var(--chip-dark)] text-purple-700 dark:text-pink-200 rounded-full px-3 py-0.5 text-xs font-extrabold">
                           #{kw}
                         </span>
                       ))}

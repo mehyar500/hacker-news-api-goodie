@@ -6,7 +6,6 @@ import {
 } from 'recharts';
 import api from '../utils/api';
 import { Insights, Story } from '../@types';
-import { MOCK_INSIGHTS, MOCK_STORIES } from '../@types/mockData';
 
 // ===== CHART COMPONENTS =====
 
@@ -159,47 +158,49 @@ const Dashboard: React.FC = () => {
   const [filter, setFilter] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
   useEffect(() => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
         setError(null);
         
-        // Check if we're in development mode
-        const isDevelopment = process.env.NODE_ENV === 'development';
-        
-        // Test backend connection first
-        try {
-          await api.get('', { timeout: 3000 });
-          
-          // If backend is reachable, fetch real data
-          const [insightsRes, trendingRes, correlationRes, storiesRes] = await Promise.all([
-            api.get('/insights/'),
-            api.get('/trending/'),
-            api.get('/correlation/'),
-            api.get<Story[]>('/stories/')
-          ]);
+        // Fetch all data in parallel
+        const [storiesRes, insightsRes, trendingRes, correlationRes] = await Promise.all([
+          api.get('/stories/'),
+          api.get('/insights/'),
+          api.get('/trending/'),
+          api.get('/correlation/')
+        ]);
 
-          setInsights({
-            keyword_freq: insightsRes.data.keyword_freq,
-            top_domains: insightsRes.data.top_domains,
-            trending: trendingRes.data.trending,
-            pairs: correlationRes.data.pairs,
-          });
-          
-          setStories(storiesRes.data);
-        } catch (error) {
-          // In development, use mock data if backend is not available
-          if (isDevelopment) {
-            console.log('Using mock data for development', error);
-            setInsights(MOCK_INSIGHTS);
-            setStories(MOCK_STORIES);
-            setError(null);
-          } else {
-            throw new Error(`Unable to connect to the backend server: ${error instanceof Error ? error.message : 'Unknown error'}`);
-          }
-        }
+        console.log(storiesRes.data, insightsRes.data, trendingRes.data, correlationRes.data);
+
+        setInsights({
+          keyword_freq: insightsRes.data.keyword_freq || {},
+          top_domains: insightsRes.data.top_domains || [],
+          trending: trendingRes.data.trending || [],
+          pairs: correlationRes.data.pairs || [],
+        });
+        
+        // Transform stories to match our frontend type
+        const formattedStories = (storiesRes.data || []).map((story: {
+          id: number;
+          title: string;
+          url?: string;
+          by: string;
+          score: number;
+          descendants: number;
+          keywords?: string[];
+        }) => ({
+          id: story.id,
+          title: story.title,
+          url: story.url,
+          by: story.by,
+          score: story.score,
+          descendants: story.descendants,
+          keywords: story.keywords || []
+        }));
+        
+        setStories(formattedStories);
       } catch (err) {
         console.error('Error fetching data:', err);
         setError('Failed to load data. ' + (err instanceof Error ? err.message : 'Please try again later.'));
@@ -228,28 +229,35 @@ const Dashboard: React.FC = () => {
 
   if (error) {
     return (
-      <div className="text-center py-20">
-        <div className="bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-6 py-4 rounded-lg max-w-2xl mx-auto">
-          <h3 className="text-xl font-semibold mb-2">Connection Error</h3>
-          <p className="mb-4">{error}</p>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-            Make sure the backend server is running at {process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000/api'}
-          </p>
-          <div className="flex justify-center gap-4">
-            <button 
-              onClick={() => window.location.reload()} 
-              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
-            >
-              Retry
-            </button>
-            <a 
-              href="https://github.com/mehyar500/hacker-news-api-goodie#readme" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition"
-            >
-              View Setup Instructions
-            </a>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-8">
+        <div className="max-w-7xl mx-auto">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">Hacker News Dashboard</h1>
+          
+          <div className="bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-6 py-4 rounded-lg max-w-2xl mx-auto">
+            <h3 className="text-xl font-semibold mb-2">Connection Error</h3>
+            <p className="mb-4">{error}</p>
+            
+
+            
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+              Make sure the backend server is running at {process.env.NEXT_PUBLIC_API_BASE?.replace('/v0', '') || 'http://localhost:8000'}
+            </p>
+            
+            <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-md">
+              <h4 className="font-medium mb-2">Troubleshooting:</h4>
+              <ul className="list-disc pl-5 space-y-1 text-sm">
+                <li>Check if the backend server is running</li>
+                <li>Verify the API URL in your environment variables</li>
+                <li>Check the browser&apos;s developer console for detailed error messages</li>
+              </ul>
+              
+              <button 
+                onClick={() => window.location.reload()}
+                className="mt-4 px-4 py-2 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/50 dark:hover:bg-blue-800/50 rounded-md text-blue-800 dark:text-blue-200 text-sm font-medium transition-colors"
+              >
+                Retry Loading Data
+              </button>
+            </div>
           </div>
         </div>
       </div>

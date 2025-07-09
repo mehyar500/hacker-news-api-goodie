@@ -5,7 +5,7 @@ const api = axios.create({
   timeout: 5000,
 });
 
-// Add retry logic for timeouts (up to 3 times)
+// retry logic for timeouts (up to 3 times)
 api.interceptors.response.use(undefined, async error => {
   const config = error.config;
   if (!config || !config.retry) config.retry = 0;

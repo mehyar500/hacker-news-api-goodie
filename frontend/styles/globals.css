@@ -4,7 +4,7 @@
 @tailwind components;
 @tailwind utilities;
 
-
+/* Light-theme vars */
 :root {
   --background: #f3f6fd;
   --foreground: #18181b;
@@ -18,17 +18,16 @@
   --chip-dark: #312e81;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #18181b;
-    --foreground: #ededed;
-    --card: rgba(24,24,27,0.85);
-    --card-dark: rgba(35,39,47,0.85);
-    --glass: rgba(24,24,27,0.6);
-    --glass-dark: rgba(35,39,47,0.6);
-    --chip: #312e81;
-    --chip-dark: #e0e7ff;
-  }
+/* Dark-theme vars (applied when <body class="dark"> ) */
+.dark {
+  --background: #18181b;
+  --foreground: #ededed;
+  --card: rgba(24,24,27,0.85);
+  --card-dark: rgba(35,39,47,0.85);
+  --glass: rgba(24,24,27,0.6);
+  --glass-dark: rgba(35,39,47,0.6);
+  --chip: #312e81;
+  --chip-dark: #e0e7ff;
 }
 
 body {
@@ -42,11 +41,6 @@ body {
   letter-spacing: 0.01em;
 }
 
-::-webkit-scrollbar {
-  width: 8px;
-  background: var(--background);
-}
-::-webkit-scrollbar-thumb {
-  background: var(--accent);
-  border-radius: 4px;
-}
+/* Scrollbar */
+::-webkit-scrollbar { width: 8px; background: var(--background); }
+::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 4px; }
